@@ -161,7 +161,3 @@ CREATE TABLE IF NOT EXISTS component_logs (
         REFERENCES components(id)
         ON DELETE CASCADE
 );
-
--- Insert migration
-
-INSERT INTO migrations (name) VALUES ('001_Initial');
