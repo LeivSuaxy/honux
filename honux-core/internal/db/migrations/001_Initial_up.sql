@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS zones (
     geometry JSONB,
     color VARCHAR(7),
 
-    CONSTRAINT uq_floor_zone_name UNIQUE (floor_id, name)
+    CONSTRAINT uq_floor_zone_name UNIQUE (floor_id, name),
     CONSTRAINT fk_zones_floors
         FOREIGN KEY (floor_id)
         REFERENCES floors(id)
@@ -141,8 +141,8 @@ CREATE TABLE IF NOT EXISTS components (
     pos_y INTEGER NOT NULL DEFAULT 0,
     current_state JSONB,
 
-    CONSTRAINT uq_controller_component_name UNIQUE (controller_id, name)
-    CONSTRAINT uq_controller_gpio UNIQUE (controller_id, gpio_pin)
+    CONSTRAINT uq_controller_component_name UNIQUE (controller_id, name),
+    CONSTRAINT uq_controller_gpio UNIQUE (controller_id, gpio_pin),
     CONSTRAINT fk_components_controllers
         FOREIGN KEY (controller_id)
         REFERENCES controllers(id)
