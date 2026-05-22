@@ -6,18 +6,18 @@ import (
 	"strings"
 )
 
-type CreateUserRequest struct {
-	Username string `json:"name"`
+type CreateUpdateUserRequest struct {
+	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
 	IsAdmin  *bool  `json:"is_admin,omitempty"`
 }
 
-func (r *CreateUserRequest) Validate() []error {
+func (r *CreateUpdateUserRequest) Validate() []error {
 	var errors []error
 
 	if strings.TrimSpace(r.Username) == "" {
-		errors = append(errors, fmt.Errorf("name is required"))
+		errors = append(errors, fmt.Errorf("username is required"))
 	}
 
 	// Validate Email

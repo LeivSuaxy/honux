@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"honux-core/internal/db/repository"
-	http_users "honux-core/internal/http-api/modules/users/handlers"
+	http_users "honux-core/internal/http-api/modules/users"
 	"honux-core/internal/service"
 	"net/http"
 	"time"
@@ -16,12 +16,17 @@ type Server struct {
 }
 
 func New(port int, db *sql.DB) *Server {
+	// Initialize Dependencies
 	userRepo := repository.NewUserRepository(db)
 	userSvc := service.NewUserService(userRepo)
 	userHandler := http_users.NewUserHandlerHTTP(userSvc)
 
+	// Create MUX Server
 	mux := http.NewServeMux()
-	registerRoutes(mux, userHandler)
+
+	// All Routes
+	http_users.RegisterRoutes(mux, userHandler)
+	registerRoutes(mux)
 
 	return &Server{
 		httpServer: &http.Server{
@@ -35,9 +40,8 @@ func New(port int, db *sql.DB) *Server {
 
 }
 
-func registerRoutes(mux *http.ServeMux, u *http_users.UserHandlerHTTP) {
+func registerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /health", healthCheck)
-	mux.HandleFunc("POST /api/v1/users", u.Create)
 }
 
 func (s *Server) Start() error {
