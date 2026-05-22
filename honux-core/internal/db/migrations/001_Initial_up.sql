@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS migration (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(255) NOT NULL,
+    name VARCHAR(255) UNIQUE NOT NULL,
     applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -27,9 +27,9 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP DEFAULT NULL,
     active BOOLEAN NOT NULL DEFAULT TRUE,
-    username VARCHAR(50) NOT NULL,
+    username VARCHAR(50) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
     is_admin BOOLEAN NOT NULL DEFAULT FALSE
 );
 
@@ -41,8 +41,8 @@ CREATE TABLE IF NOT EXISTS floors (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP DEFAULT NULL,
     active BOOLEAN NOT NULL DEFAULT TRUE,
-    name VARCHAR(255) NOT NULL,
-    level INTEGER NOT NULL
+    name VARCHAR(255) UNIQUE NOT NULL,
+    level INTEGER UNIQUE NOT NULL
 );
 
 -- Create Zone Table
@@ -55,11 +55,12 @@ CREATE TABLE IF NOT EXISTS zones (
     deleted_at TIMESTAMP DEFAULT NULL,
     active BOOLEAN NOT NULL DEFAULT TRUE,
     name VARCHAR(50) NOT NULL,
-    short_identifier VARCHAR(7),
+    short_identifier VARCHAR(7) UNIQUE,
     shape_type VARCHAR(50) NOT NULL,
     geometry JSONB,
     color VARCHAR(7),
 
+    CONSTRAINT uq_floor_zone_name UNIQUE (floor_id, name)
     CONSTRAINT fk_zones_floors
         FOREIGN KEY (floor_id)
         REFERENCES floors(id)
@@ -82,6 +83,7 @@ CREATE TABLE IF NOT EXISTS user_zones_permissions(
     zone_id UUID NOT NULL,
     acces_level access_level NOT NULL DEFAULT 'read',
 
+    CONSTRAINT uq_user_zone UNIQUE (user_id, zone_id),
     CONSTRAINT fk_user_zones_permissions_users
         FOREIGN KEY (user_id)
         REFERENCES users(id)
@@ -101,12 +103,12 @@ CREATE TABLE IF NOT EXISTS controllers (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP DEFAULT NULL,
     active BOOLEAN NOT NULL DEFAULT TRUE,
-    induced_id VARCHAR(50) DEFAULT NULL,
+    induced_id VARCHAR(50) UNIQUE DEFAULT NULL,
     name VARCHAR(100) NOT NULL,
     description TEXT DEFAULT NULL,
     device_type VARCHAR(100) NOT NULL,
     last_ip_address VARCHAR(45) DEFAULT NULL,
-    mqtt_topic VARCHAR(100) DEFAULT NULL,
+    mqtt_topic VARCHAR(100) UNIQUE DEFAULT NULL,
     is_online BOOLEAN NOT NULL DEFAULT FALSE,
     last_ping TIMESTAMP DEFAULT NULL,
     pos_x INTEGER NOT NULL DEFAULT 0,
@@ -139,6 +141,8 @@ CREATE TABLE IF NOT EXISTS components (
     pos_y INTEGER NOT NULL DEFAULT 0,
     current_state JSONB,
 
+    CONSTRAINT uq_controller_component_name UNIQUE (controller_id, name)
+    CONSTRAINT uq_controller_gpio UNIQUE (controller_id, gpio_pin)
     CONSTRAINT fk_components_controllers
         FOREIGN KEY (controller_id)
         REFERENCES controllers(id)
