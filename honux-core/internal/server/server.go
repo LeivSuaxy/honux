@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"honux-core/internal/db/repository"
+	"honux-core/internal/http-api/middlewares"
 	http_users "honux-core/internal/http-api/modules/users"
 	"honux-core/internal/service"
 	"net/http"
@@ -24,6 +25,12 @@ func New(port int, db *sql.DB) *Server {
 	// Create MUX Server
 	mux := http.NewServeMux()
 
+	stack := middlewares.Chain(
+		middlewares.Recover,
+		middlewares.RequestID,
+		middlewares.Logger,
+	)
+
 	// All Routes
 	http_users.RegisterRoutes(mux, userHandler)
 	registerRoutes(mux)
@@ -31,7 +38,7 @@ func New(port int, db *sql.DB) *Server {
 	return &Server{
 		httpServer: &http.Server{
 			Addr:         fmt.Sprintf(":%d", port),
-			Handler:      mux,
+			Handler:      stack(mux),
 			ReadTimeout:  10 * time.Second,
 			WriteTimeout: 30 * time.Second,
 			IdleTimeout:  60 * time.Second,
