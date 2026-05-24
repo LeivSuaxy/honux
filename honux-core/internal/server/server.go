@@ -8,6 +8,7 @@ import (
 	"honux-core/internal/http-api/middlewares"
 	http_floors "honux-core/internal/http-api/modules/floors"
 	http_users "honux-core/internal/http-api/modules/users"
+	"honux-core/internal/providers/cache"
 	"honux-core/internal/service"
 	"net/http"
 	"time"
@@ -19,6 +20,8 @@ type Server struct {
 
 func New(port int, db *sql.DB) *Server {
 	// Initialize Dependencies
+	cacheProvider := cache.GetCache()
+	cacheMiddleware := middlewares.NewCacheMiddleware(cacheProvider, 5*time.Minute)
 	// User
 	userRepo := repository.NewUserRepository(db)
 	userSvc := service.NewUserService(userRepo)
@@ -36,6 +39,7 @@ func New(port int, db *sql.DB) *Server {
 		middlewares.Recover,
 		middlewares.RequestID,
 		middlewares.Logger,
+		cacheMiddleware,
 	)
 
 	// All Routes
