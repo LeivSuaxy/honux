@@ -53,7 +53,7 @@ func (s *UserService) Create(ctx context.Context, req *schemas.CreateUpdateUserR
 // TODO Review returns errors!
 func (s *UserService) Update(ctx context.Context, req *schemas.CreateUpdateUserRequest, id uuid.UUID) (*models.User, error) {
 	if errors := req.Validate(); errors != nil {
-		return nil, nil
+		return nil, nil // TODO Capture and emit []errors
 	}
 
 	hashed_password, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)

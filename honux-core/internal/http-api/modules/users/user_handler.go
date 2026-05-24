@@ -7,9 +7,6 @@ import (
 	"honux-core/internal/utils"
 	"log/slog"
 	"net/http"
-	"strings"
-
-	"github.com/google/uuid"
 )
 
 type UserHandlerHTTP struct {
@@ -31,15 +28,14 @@ func (h *UserHandlerHTTP) Create(w http.ResponseWriter, r *http.Request) {
 	user, err := h.svc.Create(r.Context(), &req)
 	if err != nil {
 		slog.Error("User.Handler.Create", "error", err)
-		utils.WriteError(w, http.StatusUnprocessableEntity, err.Error())
+		schemas.InternalError(w)
 		return
 	}
 	schemas.Created(w, user)
 }
 
 func (h *UserHandlerHTTP) Update(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/users/")
-	id, err := uuid.Parse(idStr)
+	id, err := utils.ExtractPathUUID(r, "/users/")
 
 	if err != nil {
 		schemas.BadRequest(w, "UUID not valid")
@@ -47,26 +43,26 @@ func (h *UserHandlerHTTP) Update(w http.ResponseWriter, r *http.Request) {
 
 	var req schemas.CreateUpdateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		schemas.BadRequest(w, "invalid JSON body") // TODO Missing get errors[]
+		schemas.BadRequest(w, "invalid JSON body")
 		return
 	}
 	defer r.Body.Close()
 
-	user, err := h.svc.Update(r.Context(), &req, id)
+	user, err := h.svc.Update(r.Context(), &req, *id)
 	schemas.OK(w, user)
 }
 
 func (h *UserHandlerHTTP) GetByID(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/users/")
-	id, err := uuid.Parse(idStr)
+	id, err := utils.ExtractPathUUID(r, "/users/")
 
 	if err != nil {
 		schemas.BadRequest(w, "UUID not valid")
 	}
-	result, err := h.svc.GetByID(r.Context(), id)
+	result, err := h.svc.GetByID(r.Context(), *id)
 
 	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err.Error())
+		// TODO Better logs!
+		schemas.InternalError(w)
 	}
 	schemas.OK(w, result)
 }
@@ -80,7 +76,7 @@ func (h *UserHandlerHTTP) List(w http.ResponseWriter, r *http.Request) {
 
 	users, total, err := h.svc.List(r.Context(), &params)
 	if err != nil {
-		slog.Error("User.Handler.GetAll", "error", err)
+		slog.Error("User.Handler.List", "error", err)
 		schemas.InternalError(w)
 		return
 	}
@@ -89,14 +85,13 @@ func (h *UserHandlerHTTP) List(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserHandlerHTTP) Delete(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/users/")
-	id, err := uuid.Parse(idStr)
+	id, err := utils.ExtractPathUUID(r, "/users/")
 
 	if err != nil {
 		schemas.BadRequest(w, "UUID not valid")
 	}
 
-	if err := h.svc.Delete(r.Context(), id); err != nil {
+	if err := h.svc.Delete(r.Context(), *id); err != nil {
 		schemas.InternalError(w)
 	}
 

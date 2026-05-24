@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"strconv"
+	"strings"
+
+	"github.com/google/uuid"
 )
 
 func WriteJSON(w http.ResponseWriter, status int, v any) {
@@ -20,11 +22,13 @@ func WriteError(w http.ResponseWriter, status int, message string) {
 	WriteJSON(w, status, map[string]string{"error": message})
 }
 
-func ExtractPathID(r *http.Request, key string) (int64, error) {
-	s := r.PathValue(key)
-	id, err := strconv.ParseInt(s, 10, 64)
+func ExtractPathUUID(r *http.Request, key string) (*uuid.UUID, error) {
+	idStr := strings.TrimPrefix(r.URL.Path, key) // TODO Missing check key
+	id, err := uuid.Parse(idStr)
+
 	if err != nil {
-		return 0, fmt.Errorf("invalid %s: %q", key, s)
+		return nil, fmt.Errorf("UUID not valid")
 	}
-	return id, nil
+
+	return &id, nil
 }

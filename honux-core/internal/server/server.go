@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"honux-core/internal/db/repository"
 	"honux-core/internal/http-api/middlewares"
+	http_floors "honux-core/internal/http-api/modules/floors"
 	http_users "honux-core/internal/http-api/modules/users"
 	"honux-core/internal/service"
 	"net/http"
@@ -18,9 +19,15 @@ type Server struct {
 
 func New(port int, db *sql.DB) *Server {
 	// Initialize Dependencies
+	// User
 	userRepo := repository.NewUserRepository(db)
 	userSvc := service.NewUserService(userRepo)
 	userHandler := http_users.NewUserHandlerHTTP(userSvc)
+
+	// Floor
+	floorRepo := repository.NewFloorRepository(db)
+	floorSvc := service.NewFloorService(floorRepo)
+	floorHandler := http_floors.NewFloorHandlerHTTP(floorSvc)
 
 	// Create MUX Server
 	mux := http.NewServeMux()
@@ -33,6 +40,7 @@ func New(port int, db *sql.DB) *Server {
 
 	// All Routes
 	http_users.RegisterRoutes(mux, userHandler)
+	http_floors.RegisterRoutes(mux, floorHandler)
 	registerRoutes(mux)
 
 	return &Server{
