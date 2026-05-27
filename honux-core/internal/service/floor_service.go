@@ -33,19 +33,11 @@ func (s *FloorService) GetByID(ctx context.Context, id uuid.UUID) (*models.Floor
 	return f, nil
 }
 
-func (s *FloorService) Create(ctx context.Context, req *schemas.CreateUpdateFloorRequest) (*models.Floor, error) {
-	if errors := req.Validate(); errors != nil {
-		return nil, nil
-	}
-
+func (s *FloorService) Create(ctx context.Context, req *schemas.CreateUpdateFloor) (*models.Floor, error) {
 	return s.repo.Create(ctx, req)
 }
 
-func (s *FloorService) Update(ctx context.Context, req *schemas.CreateUpdateFloorRequest, id uuid.UUID) (*models.Floor, error) {
-	if errors := req.Validate(); errors != nil {
-		return nil, nil // TODO Capture and emit []errors
-	}
-
+func (s *FloorService) Update(ctx context.Context, req *schemas.CreateUpdateFloor, id uuid.UUID) (*models.Floor, error) {
 	return s.repo.Update(ctx, req, id)
 }
 

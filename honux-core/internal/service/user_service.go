@@ -35,33 +35,25 @@ func (s *UserService) GetByID(ctx context.Context, id uuid.UUID) (*models.User, 
 }
 
 // TODO Review returns errors!
-func (s *UserService) Create(ctx context.Context, req *schemas.CreateUpdateUserRequest) (*models.User, error) {
-	if errors := req.Validate(); errors != nil {
-		return nil, nil
-	}
-
-	hashed_password, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+func (s *UserService) Create(ctx context.Context, req *schemas.CreateUpdateUser) (*models.User, error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, nil
 	}
 
-	req.Password = string(hashed_password)
+	req.Password = string(hashedPassword)
 
 	return s.repo.Create(ctx, req)
 }
 
 // TODO Review returns errors!
-func (s *UserService) Update(ctx context.Context, req *schemas.CreateUpdateUserRequest, id uuid.UUID) (*models.User, error) {
-	if errors := req.Validate(); errors != nil {
-		return nil, nil // TODO Capture and emit []errors
-	}
-
-	hashed_password, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+func (s *UserService) Update(ctx context.Context, req *schemas.CreateUpdateUser, id uuid.UUID) (*models.User, error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, nil
 	}
 
-	req.Password = string(hashed_password)
+	req.Password = string(hashedPassword)
 
 	return s.repo.Update(ctx, req, id)
 }

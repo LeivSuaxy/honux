@@ -97,7 +97,7 @@ func (r *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (*models.Us
 	return &u, nil
 }
 
-func (r *UserRepository) Create(ctx context.Context, req *schemas.CreateUpdateUserRequest) (*models.User, error) {
+func (r *UserRepository) Create(ctx context.Context, req *schemas.CreateUpdateUser) (*models.User, error) {
 	var u models.User
 	query := `
 		INSERT INTO users (username, password_hash, email, is_admin)
@@ -120,7 +120,7 @@ func (r *UserRepository) Create(ctx context.Context, req *schemas.CreateUpdateUs
 	return &u, nil
 }
 
-func (r *UserRepository) Update(ctx context.Context, req *schemas.CreateUpdateUserRequest, id uuid.UUID) (*models.User, error) {
+func (r *UserRepository) Update(ctx context.Context, req *schemas.CreateUpdateUser, id uuid.UUID) (*models.User, error) {
 	query := `
 		UPDATE users
 		SET

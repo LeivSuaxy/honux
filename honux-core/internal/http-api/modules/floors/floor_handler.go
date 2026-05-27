@@ -51,14 +51,19 @@ func (h *FloorHandlerHTTP) GetByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *FloorHandlerHTTP) Create(w http.ResponseWriter, r *http.Request) {
-	var req schemas.CreateUpdateFloorRequest
+	var req CreateUpdateFloorRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		schemas.BadRequest(w, "invalid JSON body") // TODO missing get errors[]
 		return
 	}
 	defer r.Body.Close()
 
-	floor, err := h.svc.Create(r.Context(), &req)
+	if errs := req.Validate(); errs != nil {
+		schemas.BadRequest(w, "invalid JSON body") // TODO missing get errors[]
+		return
+	}
+
+	floor, err := h.svc.Create(r.Context(), req.ToSchema())
 	if err != nil {
 		slog.Error("Floor.Handler.Create", "error", err)
 		schemas.InternalError(w)
@@ -74,14 +79,19 @@ func (h *FloorHandlerHTTP) Update(w http.ResponseWriter, r *http.Request) {
 		schemas.BadRequest(w, "UUID not valid")
 	}
 
-	var req schemas.CreateUpdateFloorRequest
+	var req CreateUpdateFloorRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		schemas.BadRequest(w, "invalid JSON body")
 		return
 	}
 	defer r.Body.Close()
 
-	floor, err := h.svc.Update(r.Context(), &req, *id)
+	if errs := req.Validate(); errs != nil {
+		schemas.BadRequest(w, "invalid JSON body") // TODO missing get errors[]
+		return
+	}
+
+	floor, err := h.svc.Update(r.Context(), req.ToSchema(), *id)
 	schemas.OK(w, floor)
 }
 

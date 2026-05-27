@@ -18,14 +18,20 @@ func NewUserHandlerHTTP(svc *service.UserService) *UserHandlerHTTP {
 }
 
 func (h *UserHandlerHTTP) Create(w http.ResponseWriter, r *http.Request) {
-	var req schemas.CreateUpdateUserRequest
+	var req CreateUpdateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		schemas.BadRequest(w, "invalid JSON body")
+		return
+	}
+
+	defer r.Body.Close()
+
+	if errs := req.Validate(); errs != nil {
 		schemas.BadRequest(w, "invalid JSON body") // TODO Missing get errors[]
 		return
 	}
-	defer r.Body.Close()
 
-	user, err := h.svc.Create(r.Context(), &req)
+	user, err := h.svc.Create(r.Context(), req.ToSchema())
 	if err != nil {
 		slog.Error("User.Handler.Create", "error", err)
 		schemas.InternalError(w)
@@ -41,14 +47,19 @@ func (h *UserHandlerHTTP) Update(w http.ResponseWriter, r *http.Request) {
 		schemas.BadRequest(w, "UUID not valid")
 	}
 
-	var req schemas.CreateUpdateUserRequest
+	var req CreateUpdateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		schemas.BadRequest(w, "invalid JSON body")
 		return
 	}
 	defer r.Body.Close()
 
-	user, err := h.svc.Update(r.Context(), &req, *id)
+	if errs := req.Validate(); errs != nil {
+		schemas.BadRequest(w, "invalid JSON body") // TODO missing get errors[]
+		return
+	}
+
+	user, err := h.svc.Update(r.Context(), req.ToSchema(), *id)
 	schemas.OK(w, user)
 }
 

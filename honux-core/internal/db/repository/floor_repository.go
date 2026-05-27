@@ -53,7 +53,7 @@ func (r *FloorRepository) List(ctx context.Context, req *schemas.PaginationParam
 		floors = append(floors, f)
 	}
 
-	if err = rows.Err(); err != nil {
+	if err := rows.Err(); err != nil {
 		return nil, 0, fmt.Errorf("FloorRepository.List rows: %w", err)
 	}
 
@@ -95,7 +95,7 @@ func (r *FloorRepository) FindByID(ctx context.Context, id uuid.UUID) (*models.F
 	return &f, nil
 }
 
-func (r *FloorRepository) Create(ctx context.Context, req *schemas.CreateUpdateFloorRequest) (*models.Floor, error) {
+func (r *FloorRepository) Create(ctx context.Context, req *schemas.CreateUpdateFloor) (*models.Floor, error) {
 	var f models.Floor
 	query := `
 		INSERT INTO floors (name, level)
@@ -116,7 +116,7 @@ func (r *FloorRepository) Create(ctx context.Context, req *schemas.CreateUpdateF
 	return &f, nil
 }
 
-func (r *FloorRepository) Update(ctx context.Context, req *schemas.CreateUpdateFloorRequest, id uuid.UUID) (*models.Floor, error) {
+func (r *FloorRepository) Update(ctx context.Context, req *schemas.CreateUpdateFloor, id uuid.UUID) (*models.Floor, error) {
 	query := `
 		UPDATE floors
 		SET
