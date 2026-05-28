@@ -1,11 +1,14 @@
 package http_floors
 
-import "net/http"
+import (
+	"honux-core/internal/server/router"
+)
 
-func RegisterRoutes(mux *http.ServeMux, h *FloorHandlerHTTP) {
-	mux.HandleFunc("GET /floors", h.List)
-	mux.HandleFunc("GET /floors/{id}", h.GetByID)
-	mux.HandleFunc("POST /floors", h.Create)
-	mux.HandleFunc("DELETE /floors", h.Delete)
-	mux.HandleFunc("PUT /floors", h.Update)
+func RegisterRoutes(r router.Router, h *FloorHandlerHTTP) {
+	m := r.Module("floors")
+	m.HandleFunc("GET /floors", h.List)
+	m.HandleFunc("GET /floors/{id}", h.GetByID)
+	m.HandleFunc("POST /floors", h.Create)
+	m.HandleFunc("PUT /floors/{id}", h.Update)
+	m.HandleFunc("DELETE /floors/{id}", h.Delete)
 }

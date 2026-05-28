@@ -9,6 +9,7 @@ import (
 	http_floors "honux-core/internal/http-api/modules/floors"
 	http_users "honux-core/internal/http-api/modules/users"
 	"honux-core/internal/providers/cache"
+	"honux-core/internal/server/router"
 	"honux-core/internal/service"
 	"net/http"
 	"time"
@@ -19,6 +20,7 @@ type Server struct {
 }
 
 func New(port int, db *sql.DB) *Server {
+	start := time.Now()
 	// Initialize Dependencies
 	cacheProvider := cache.GetCache()
 	cacheMiddleware := middlewares.NewCacheMiddleware(cacheProvider, 5*time.Minute)
@@ -33,7 +35,7 @@ func New(port int, db *sql.DB) *Server {
 	floorHandler := http_floors.NewFloorHandlerHTTP(floorSvc)
 
 	// Create MUX Server
-	mux := http.NewServeMux()
+	mux := router.NewTrackedMux()
 
 	stack := middlewares.Chain(
 		middlewares.Recover,
@@ -47,6 +49,8 @@ func New(port int, db *sql.DB) *Server {
 	http_floors.RegisterRoutes(mux, floorHandler)
 	registerRoutes(mux)
 
+	mux.PrintRoutes(time.Since(start).Milliseconds())
+
 	return &Server{
 		httpServer: &http.Server{
 			Addr:         fmt.Sprintf(":%d", port),
@@ -59,8 +63,9 @@ func New(port int, db *sql.DB) *Server {
 
 }
 
-func registerRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("GET /health", healthCheck)
+func registerRoutes(r router.Router) {
+	m := r.Module("common")
+	m.HandleFunc("GET /health", healthCheck)
 }
 
 func (s *Server) Start() error {

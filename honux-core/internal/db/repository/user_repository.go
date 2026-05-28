@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"honux-core/internal/db"
 	"honux-core/internal/db/models"
 	"honux-core/internal/domain/apperror"
 	"honux-core/internal/schemas"
@@ -115,7 +116,7 @@ func (r *UserRepository) Create(ctx context.Context, req *schemas.CreateUpdateUs
 	u.IsAdmin = *req.IsAdmin
 
 	if err != nil {
-		return nil, apperror.Internal(err)
+		return nil, db.PgIdentifyError(err, db.PgErrorHint{Code: db.UniqueViolation, Message: "username or email already exists"})
 	}
 	return &u, nil
 }
@@ -151,7 +152,7 @@ func (r *UserRepository) Update(ctx context.Context, req *schemas.CreateUpdateUs
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, apperror.NotFound("user")
 		}
-		return nil, apperror.Internal(err)
+		return nil, db.PgIdentifyError(err, db.PgErrorHint{Code: db.UniqueViolation, Message: "username or email already exists"})
 	}
 
 	if deletedAt.Valid {
