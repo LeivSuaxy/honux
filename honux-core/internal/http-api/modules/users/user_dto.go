@@ -3,7 +3,6 @@ package http_users
 import (
 	"honux-core/internal/schemas"
 	"honux-core/internal/validators"
-	"strings"
 )
 
 type CreateUpdateUserRequest struct {
@@ -16,8 +15,14 @@ type CreateUpdateUserRequest struct {
 func (r *CreateUpdateUserRequest) Validate() error {
 	fe := make(validators.FieldErrors)
 
-	if strings.TrimSpace(r.Username) == "" {
-		fe.Add("username", "username is required")
+	usernameErrors := validators.NewStringValidator("username", r.Username).
+		IsNotEmpty().
+		IsGreaterThan(255).
+		IsLessThan(0).
+		GetErrors()
+
+	if usernameErrors != nil {
+		fe.AppendFieldError(usernameErrors)
 	}
 
 	// Validate Email
@@ -25,8 +30,13 @@ func (r *CreateUpdateUserRequest) Validate() error {
 		fe.AddErrors("email", emailErrors)
 	}
 
-	if len(r.Password) < 8 {
-		fe.Add("password", "password must be at least 8 characters")
+	passwordErrors := validators.NewStringValidator("password", r.Password).
+		IsNotEmpty().
+		IsLessThan(8).
+		GetErrors()
+
+	if passwordErrors != nil {
+		fe.AppendFieldError(passwordErrors)
 	}
 
 	return fe.ToAppError()

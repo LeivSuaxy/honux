@@ -23,3 +23,4 @@ func PgErrCode(err error) string {
 func IsUniqueViolation(err error) bool     { return PgErrCode(err) == pgUniqueViolation }
 func IsForeignKeyViolation(err error) bool { return PgErrCode(err) == pgForeignKeyViolation }
 func IsNotNullViolation(err error) bool    { return PgErrCode(err) == pgNotNullViolation }
+func IsCheckViolation(err error) bool      { return PgErrCode(err) == pgCheckViolation }

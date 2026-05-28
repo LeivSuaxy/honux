@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"honux-core/internal/db/models"
+	"honux-core/internal/domain/apperror"
 	"honux-core/internal/schemas"
 )
 
@@ -20,7 +21,7 @@ func (r *ZoneRepository) List(ctx context.Context, req *schemas.PaginationParams
 	var total int
 	countQuery := `SELECT COUNT(*) FROM zones WHERE deleted_at IS NULL`
 	if err := r.db.QueryRowContext(ctx, countQuery).Scan(&total); err != nil {
-		return nil, 0, fmt.Errorf("ZoneRepository.List count: %w", err)
+		return nil, 0, apperror.Internal(err)
 	}
 
 	selectQuery := `
@@ -33,9 +34,14 @@ func (r *ZoneRepository) List(ctx context.Context, req *schemas.PaginationParams
 
 	rows, err := r.db.QueryContext(ctx, selectQuery, req.PerPage, req.GetOffset())
 	if err != nil {
-		return nil, 0, fmt.Errorf("ZoneRepository.List query: %w", err)
+		return nil, 0, apperror.Internal(err)
 	}
-	defer rows.Close()
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			return
+		}
+	}(rows)
 
 	var zones []models.Zone
 	for rows.Next() {
@@ -63,7 +69,7 @@ func (r *ZoneRepository) List(ctx context.Context, req *schemas.PaginationParams
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, 0, fmt.Errorf("ZoneRepository.List rows: %w", err)
+		return nil, 0, apperror.Internal(err)
 	}
 
 	return zones, total, nil
@@ -90,7 +96,7 @@ func (r *ZoneRepository) Create(ctx context.Context, req *schemas.CreateUpdateZo
 	z.FloorId = *req.FloorId
 
 	if err != nil {
-		return nil, fmt.Errorf("ZoneRepository.Create: %w", err)
+		return nil, apperror.Internal(err) // TODO More error control with PgError
 	}
 
 	return &z, nil

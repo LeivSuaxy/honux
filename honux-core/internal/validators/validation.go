@@ -11,6 +11,10 @@ func (fe FieldErrors) Add(field, message string) {
 	fe[field] = message
 }
 
+func (fe FieldErrors) AddError(field string, errs error) {
+	fe.Add(field, errs.Error())
+}
+
 func (fe FieldErrors) AddErrors(field string, errs []error) {
 	if len(errs) == 0 {
 		return
@@ -28,6 +32,12 @@ func (fe FieldErrors) AddErrors(field string, errs []error) {
 
 func (fe FieldErrors) HasErrors() bool {
 	return len(fe) > 0
+}
+
+func (fe FieldErrors) AppendFieldError(fields FieldErrors) {
+	for field, message := range fields {
+		fe.Add(field, message)
+	}
 }
 
 func (fe FieldErrors) ToAppError() error {

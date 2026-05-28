@@ -3,7 +3,6 @@ package http_floors
 import (
 	"honux-core/internal/schemas"
 	"honux-core/internal/validators"
-	"strings"
 )
 
 type CreateUpdateFloorRequest struct {
@@ -14,16 +13,24 @@ type CreateUpdateFloorRequest struct {
 func (r *CreateUpdateFloorRequest) Validate() error {
 	fe := make(validators.FieldErrors)
 
-	if strings.TrimSpace(r.Name) == "" {
-		fe.Add("name", "name is required")
+	nameErrors := validators.
+		NewStringValidator("name", r.Name).
+		IsNotEmpty().
+		IsGreaterThan(255).
+		GetErrors()
+
+	if nameErrors != nil {
+		fe.AppendFieldError(nameErrors)
 	}
 
-	if len(r.Name) > 255 {
-		fe.Add("name", "name is too long")
-	}
+	levelErrors := validators.
+		NewIntValidator("level", r.Level).
+		CannotBeZero().
+		CannotBeNegative().
+		GetErrors()
 
-	if r.Level <= 0 {
-		fe.Add("level", "must be greater than zero")
+	if levelErrors != nil {
+		fe.AppendFieldError(levelErrors)
 	}
 
 	return fe.ToAppError()
