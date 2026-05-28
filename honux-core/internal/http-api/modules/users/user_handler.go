@@ -5,6 +5,7 @@ import (
 	"honux-core/internal/schemas"
 	"honux-core/internal/service"
 	"honux-core/internal/utils"
+	"io"
 	"log/slog"
 	"net/http"
 )
@@ -20,21 +21,27 @@ func NewUserHandlerHTTP(svc *service.UserService) *UserHandlerHTTP {
 func (h *UserHandlerHTTP) Create(w http.ResponseWriter, r *http.Request) {
 	var req CreateUpdateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		schemas.BadRequest(w, "invalid JSON body")
+		schemas.RespondError(w, r, err)
 		return
 	}
 
-	defer r.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			schemas.RespondError(w, r, err)
+			return
+		}
+	}(r.Body)
 
 	if errs := req.Validate(); errs != nil {
-		schemas.BadRequest(w, "invalid JSON body") // TODO Missing get errors[]
+		schemas.RespondError(w, r, errs)
 		return
 	}
 
 	user, err := h.svc.Create(r.Context(), req.ToSchema())
 	if err != nil {
 		slog.Error("User.Handler.Create", "error", err)
-		schemas.InternalError(w)
+		schemas.RespondError(w, r, err)
 		return
 	}
 	schemas.Created(w, user)
@@ -45,21 +52,34 @@ func (h *UserHandlerHTTP) Update(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		schemas.BadRequest(w, "UUID not valid")
+		return
 	}
 
 	var req CreateUpdateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		schemas.BadRequest(w, "invalid JSON body")
+		schemas.RespondError(w, r, err)
 		return
 	}
-	defer r.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			schemas.RespondError(w, r, err)
+		}
+	}(r.Body)
 
 	if errs := req.Validate(); errs != nil {
-		schemas.BadRequest(w, "invalid JSON body") // TODO missing get errors[]
+		schemas.RespondError(w, r, err)
 		return
 	}
 
 	user, err := h.svc.Update(r.Context(), req.ToSchema(), *id)
+
+	if err != nil {
+		slog.Error("UserHandler.Update", "error", err)
+		schemas.RespondError(w, r, err)
+		return
+	}
+
 	schemas.OK(w, user)
 }
 
@@ -68,12 +88,13 @@ func (h *UserHandlerHTTP) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		schemas.BadRequest(w, "UUID not valid")
+		return
 	}
 	result, err := h.svc.GetByID(r.Context(), *id)
 
 	if err != nil {
-		// TODO Better logs!
-		schemas.InternalError(w)
+		schemas.RespondError(w, r, err)
+		return
 	}
 	schemas.OK(w, result)
 }
@@ -88,7 +109,7 @@ func (h *UserHandlerHTTP) List(w http.ResponseWriter, r *http.Request) {
 	users, total, err := h.svc.List(r.Context(), &params)
 	if err != nil {
 		slog.Error("User.Handler.List", "error", err)
-		schemas.InternalError(w)
+		schemas.RespondError(w, r, err)
 		return
 	}
 
@@ -100,10 +121,12 @@ func (h *UserHandlerHTTP) Delete(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		schemas.BadRequest(w, "UUID not valid")
+		return
 	}
 
 	if err := h.svc.Delete(r.Context(), *id); err != nil {
 		schemas.InternalError(w)
+		return
 	}
 
 	schemas.OK(w, "User deleted successfully")

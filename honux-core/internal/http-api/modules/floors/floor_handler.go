@@ -5,17 +5,17 @@ import (
 	"honux-core/internal/schemas"
 	"honux-core/internal/service"
 	"honux-core/internal/utils"
+	"io"
 	"log/slog"
 	"net/http"
 )
 
 type FloorHandlerHTTP struct {
 	svc      *service.FloorService
-	url_path string
 }
 
 func NewFloorHandlerHTTP(svc *service.FloorService) *FloorHandlerHTTP {
-	return &FloorHandlerHTTP{svc: svc, url_path: "/floors"}
+	return &FloorHandlerHTTP{svc: svc}
 }
 
 func (h *FloorHandlerHTTP) List(w http.ResponseWriter, r *http.Request) {
@@ -40,12 +40,13 @@ func (h *FloorHandlerHTTP) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		schemas.BadRequest(w, "UUID not valid")
+		return
 	}
 	result, err := h.svc.GetByID(r.Context(), *id)
 
 	if err != nil {
-		// TODO Better logs!
-		schemas.InternalError(w)
+		schemas.RespondError(w, r, err)
+		return
 	}
 	schemas.OK(w, result)
 }
@@ -53,20 +54,26 @@ func (h *FloorHandlerHTTP) GetByID(w http.ResponseWriter, r *http.Request) {
 func (h *FloorHandlerHTTP) Create(w http.ResponseWriter, r *http.Request) {
 	var req CreateUpdateFloorRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		schemas.BadRequest(w, "invalid JSON body") // TODO missing get errors[]
+		schemas.BadRequest(w, "invalid JSON body")
 		return
 	}
-	defer r.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			schemas.RespondError(w, r, err)
+			return
+		}
+	}(r.Body)
 
 	if errs := req.Validate(); errs != nil {
-		schemas.BadRequest(w, "invalid JSON body") // TODO missing get errors[]
+		schemas.RespondError(w, r, errs)
 		return
 	}
 
 	floor, err := h.svc.Create(r.Context(), req.ToSchema())
 	if err != nil {
 		slog.Error("Floor.Handler.Create", "error", err)
-		schemas.InternalError(w)
+		schemas.RespondError(w, r, err)
 		return
 	}
 	schemas.Created(w, floor)
@@ -77,6 +84,7 @@ func (h *FloorHandlerHTTP) Update(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		schemas.BadRequest(w, "UUID not valid")
+		return
 	}
 
 	var req CreateUpdateFloorRequest
@@ -84,14 +92,26 @@ func (h *FloorHandlerHTTP) Update(w http.ResponseWriter, r *http.Request) {
 		schemas.BadRequest(w, "invalid JSON body")
 		return
 	}
-	defer r.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			schemas.RespondError(w, r, err)
+			return
+		}
+	}(r.Body)
 
 	if errs := req.Validate(); errs != nil {
-		schemas.BadRequest(w, "invalid JSON body") // TODO missing get errors[]
+		schemas.RespondError(w, r, errs)
 		return
 	}
 
 	floor, err := h.svc.Update(r.Context(), req.ToSchema(), *id)
+
+	if err != nil {
+		schemas.RespondError(w, r, err)
+		return
+	}
+
 	schemas.OK(w, floor)
 }
 
@@ -100,10 +120,12 @@ func (h *FloorHandlerHTTP) Delete(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		schemas.BadRequest(w, "UUID not valid")
+		return
 	}
 
 	if err := h.svc.Delete(r.Context(), *id); err != nil {
-		schemas.InternalError(w)
+		schemas.RespondError(w, r, err)
+		return
 	}
 
 	schemas.OK(w, "Floor deleted successfully")

@@ -69,4 +69,29 @@ func (r *ZoneRepository) List(ctx context.Context, req *schemas.PaginationParams
 	return zones, total, nil
 }
 
-//func (r *ZoneRepository) Create(ctx context.Context, req *schemas.)
+func (r *ZoneRepository) Create(ctx context.Context, req *schemas.CreateUpdateZone) (*models.Zone, error) {
+	var z models.Zone
+
+	query := `
+		INSERT INTO zones (name, short_identifier, shape_type, geometry, color, floor_id)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id, created_at, updated_at, active
+	`
+
+	err := r.db.QueryRowContext(ctx, query,
+		req.Name, req.ShortIdentifier, req.ShapeType, req.Geometry, req.Color, req.FloorId,
+	).Scan(&z.ID, &z.CreatedAt, &z.UpdatedAt, &z.Active)
+
+	z.Name = req.Name
+	z.ShortIdentifier = req.ShortIdentifier
+	z.ShapeType = req.ShapeType
+	z.Geometry = req.Geometry
+	z.Color = req.Color
+	z.FloorId = *req.FloorId
+
+	if err != nil {
+		return nil, fmt.Errorf("ZoneRepository.Create: %w", err)
+	}
+
+	return &z, nil
+}

@@ -2,9 +2,9 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"honux-core/internal/db/models"
 	"honux-core/internal/db/repository"
+	"honux-core/internal/domain/apperror"
 	"honux-core/internal/schemas"
 
 	"github.com/google/uuid"
@@ -28,9 +28,6 @@ func (s *UserService) GetByID(ctx context.Context, id uuid.UUID) (*models.User, 
 	if err != nil {
 		return nil, err
 	}
-	if u == nil {
-		return nil, fmt.Errorf("user %d not found", id)
-	}
 	return u, nil
 }
 
@@ -38,7 +35,7 @@ func (s *UserService) GetByID(ctx context.Context, id uuid.UUID) (*models.User, 
 func (s *UserService) Create(ctx context.Context, req *schemas.CreateUpdateUser) (*models.User, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, nil
+		return nil, apperror.Internal(err)
 	}
 
 	req.Password = string(hashedPassword)
@@ -50,7 +47,7 @@ func (s *UserService) Create(ctx context.Context, req *schemas.CreateUpdateUser)
 func (s *UserService) Update(ctx context.Context, req *schemas.CreateUpdateUser, id uuid.UUID) (*models.User, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, nil
+		return nil, apperror.Internal(err)
 	}
 
 	req.Password = string(hashedPassword)

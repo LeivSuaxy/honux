@@ -4,8 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"honux-core/internal/db/models"
+	"honux-core/internal/domain/apperror"
 	"honux-core/internal/schemas"
 
 	"github.com/google/uuid"
@@ -23,7 +23,7 @@ func (r *UserRepository) List(ctx context.Context, req *schemas.PaginationParams
 	var total int
 	countQuery := `SELECT COUNT(*) FROM users WHERE deleted_at IS NULL`
 	if err := r.db.QueryRowContext(ctx, countQuery).Scan(&total); err != nil {
-		return nil, 0, fmt.Errorf("UserRepository.List count: %w", err)
+		return nil, 0, apperror.Internal(err)
 	}
 
 	selectQuery := `
@@ -36,7 +36,7 @@ func (r *UserRepository) List(ctx context.Context, req *schemas.PaginationParams
 
 	rows, err := r.db.QueryContext(ctx, selectQuery, req.PerPage, req.GetOffset())
 	if err != nil {
-		return nil, 0, fmt.Errorf("UserRepository.List query: %w", err)
+		return nil, 0, apperror.Internal(err)
 	}
 	defer rows.Close()
 
@@ -45,7 +45,7 @@ func (r *UserRepository) List(ctx context.Context, req *schemas.PaginationParams
 		var u models.User
 		var deletedAt sql.NullTime
 		if err := rows.Scan(&u.ID, &u.CreatedAt, &u.UpdatedAt, &deletedAt, &u.Active, &u.Username, &u.Email, &u.IsAdmin); err != nil {
-			return nil, 0, fmt.Errorf("UserRepository.List scan: %w", err)
+			return nil, 0, apperror.Internal(err)
 		}
 		if deletedAt.Valid {
 			u.DeletedAt = &deletedAt.Time
@@ -54,7 +54,7 @@ func (r *UserRepository) List(ctx context.Context, req *schemas.PaginationParams
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, 0, fmt.Errorf("UserRepository.List rows: %w", err)
+		return nil, 0, apperror.Internal(err)
 	}
 
 	return users, total, nil
@@ -83,11 +83,11 @@ func (r *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (*models.Us
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, nil
+		return nil, apperror.NotFound("user")
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("UserRepository.FindById(id=%s): %w", id, err)
+		return nil, apperror.Internal(err)
 	}
 
 	if deletedAt.Valid {
@@ -115,7 +115,7 @@ func (r *UserRepository) Create(ctx context.Context, req *schemas.CreateUpdateUs
 	u.IsAdmin = *req.IsAdmin
 
 	if err != nil {
-		return nil, fmt.Errorf("UserRepository.Create: %w", err)
+		return nil, apperror.Internal(err)
 	}
 	return &u, nil
 }
@@ -149,9 +149,9 @@ func (r *UserRepository) Update(ctx context.Context, req *schemas.CreateUpdateUs
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("UserRepository.Update: user %s not found", id)
+			return nil, apperror.NotFound("user")
 		}
-		return nil, fmt.Errorf("UserRepository.Update: %w", err)
+		return nil, apperror.Internal(err)
 	}
 
 	if deletedAt.Valid {
@@ -165,11 +165,11 @@ func (r *UserRepository) SoftDelete(ctx context.Context, id uuid.UUID) error {
 	query := `UPDATE users SET deleted_at = NOW(), active = FALSE WHERE id = $1`
 	res, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
-		return fmt.Errorf("UserRepository.Delete: %w", err)
+		return apperror.Internal(err)
 	}
 	n, _ := res.RowsAffected()
 	if n == 0 {
-		return fmt.Errorf("UserRepository.Delete: user %s not found", id)
+		return apperror.NotFound("user")
 	}
 	return nil
 }

@@ -1,8 +1,8 @@
 package http_floors
 
 import (
-	"fmt"
 	"honux-core/internal/schemas"
+	"honux-core/internal/validators"
 	"strings"
 )
 
@@ -11,26 +11,22 @@ type CreateUpdateFloorRequest struct {
 	Level int    `json:"level"`
 }
 
-func (r *CreateUpdateFloorRequest) Validate() []error {
-	var errors []error
+func (r *CreateUpdateFloorRequest) Validate() error {
+	fe := make(validators.FieldErrors)
 
 	if strings.TrimSpace(r.Name) == "" {
-		errors = append(errors, fmt.Errorf("name is required"))
+		fe.Add("name", "name is required")
 	}
 
 	if len(r.Name) > 255 {
-		errors = append(errors, fmt.Errorf("name is too long"))
+		fe.Add("name", "name is too long")
 	}
 
 	if r.Level <= 0 {
-		errors = append(errors, fmt.Errorf("level must be a positive number"))
+		fe.Add("level", "must be greater than zero")
 	}
 
-	if len(errors) == 0 {
-		return nil
-	}
-
-	return errors
+	return fe.ToAppError()
 }
 
 func (r *CreateUpdateFloorRequest) ToSchema() *schemas.CreateUpdateFloor {

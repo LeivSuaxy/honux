@@ -1,7 +1,6 @@
 package http_users
 
 import (
-	"fmt"
 	"honux-core/internal/schemas"
 	"honux-core/internal/validators"
 	"strings"
@@ -14,27 +13,23 @@ type CreateUpdateUserRequest struct {
 	IsAdmin  *bool  `json:"is_admin,omitempty"`
 }
 
-func (r *CreateUpdateUserRequest) Validate() []error {
-	var errors []error
+func (r *CreateUpdateUserRequest) Validate() error {
+	fe := make(validators.FieldErrors)
 
 	if strings.TrimSpace(r.Username) == "" {
-		errors = append(errors, fmt.Errorf("username is required"))
+		fe.Add("username", "username is required")
 	}
 
 	// Validate Email
 	if valid, emailErrors := validators.ValidateEmail(&r.Email); !valid {
-		errors = append(errors, emailErrors...)
+		fe.AddErrors("email", emailErrors)
 	}
 
 	if len(r.Password) < 8 {
-		errors = append(errors, fmt.Errorf("password must be at least 8 characters long"))
+		fe.Add("password", "password must be at least 8 characters")
 	}
 
-	if len(errors) == 0 {
-		return nil
-	}
-
-	return errors
+	return fe.ToAppError()
 }
 
 func (r *CreateUpdateUserRequest) ToSchema() *schemas.CreateUpdateUser {

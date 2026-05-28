@@ -4,8 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"honux-core/internal/db/models"
+	"honux-core/internal/domain/apperror"
 	"honux-core/internal/schemas"
 
 	"github.com/google/uuid"
@@ -23,7 +23,7 @@ func (r *FloorRepository) List(ctx context.Context, req *schemas.PaginationParam
 	var total int
 	countQuery := `SELECT COUNT(*) FROM floors WHERE deleted_at IS NULL`
 	if err := r.db.QueryRowContext(ctx, countQuery).Scan(&total); err != nil {
-		return nil, 0, fmt.Errorf("FloorRepository.List count: %w", err)
+		return nil, 0, apperror.Internal(err)
 	}
 
 	selectQuery := `
@@ -36,7 +36,7 @@ func (r *FloorRepository) List(ctx context.Context, req *schemas.PaginationParam
 
 	rows, err := r.db.QueryContext(ctx, selectQuery, req.PerPage, req.GetOffset())
 	if err != nil {
-		return nil, 0, fmt.Errorf("FloorRepository.List query: %w", err)
+		return nil, 0, apperror.Internal(err)
 	}
 	defer rows.Close()
 
@@ -45,7 +45,7 @@ func (r *FloorRepository) List(ctx context.Context, req *schemas.PaginationParam
 		var f models.Floor
 		var deletedAt sql.NullTime
 		if err := rows.Scan(&f.ID, &f.CreatedAt, &f.UpdatedAt, &deletedAt, &f.Active, &f.Active, &f.Level); err != nil {
-			return nil, 0, fmt.Errorf("FloorRepository.List scan: %w", err)
+			return nil, 0, apperror.Internal(err)
 		}
 		if deletedAt.Valid {
 			f.DeletedAt = &deletedAt.Time
@@ -54,7 +54,7 @@ func (r *FloorRepository) List(ctx context.Context, req *schemas.PaginationParam
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, 0, fmt.Errorf("FloorRepository.List rows: %w", err)
+		return nil, 0, apperror.Internal(err)
 	}
 
 	return floors, total, nil
@@ -81,11 +81,11 @@ func (r *FloorRepository) FindByID(ctx context.Context, id uuid.UUID) (*models.F
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, nil
+		return nil, apperror.NotFound("floor")
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("FloorRepository.FindById(id=%s): %w", id, err)
+		return nil, apperror.Internal(err)
 	}
 
 	if deletedAt.Valid {
@@ -111,7 +111,7 @@ func (r *FloorRepository) Create(ctx context.Context, req *schemas.CreateUpdateF
 	f.Level = req.Level
 
 	if err != nil {
-		return nil, fmt.Errorf("FloorRepository.Create: %w", err)
+		return nil, apperror.Internal(err)
 	}
 	return &f, nil
 }
@@ -138,9 +138,9 @@ func (r *FloorRepository) Update(ctx context.Context, req *schemas.CreateUpdateF
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("FloorRepository.Update: floor %s not found", id)
+			return nil, apperror.NotFound("floor")
 		}
-		return nil, fmt.Errorf("FloorRepository.Update: %w", err)
+		return nil, apperror.Internal(err)
 	}
 
 	if deletedAt.Valid {
@@ -154,11 +154,11 @@ func (r *FloorRepository) SoftDelete(ctx context.Context, id uuid.UUID) error {
 	query := `UPDATE floors SET deleted_at = NOW(), active = FALSE WHERE id = $1`
 	res, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
-		return fmt.Errorf("FloorRepository.Delete: %w", err)
+		return apperror.Internal(err)
 	}
 	n, _ := res.RowsAffected()
 	if n == 0 {
-		return fmt.Errorf("FloorRepository.Delete: floor %s not found", id)
+		return apperror.NotFound("floor")
 	}
 	return nil
 }

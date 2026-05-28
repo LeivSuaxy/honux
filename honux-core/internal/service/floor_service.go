@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"honux-core/internal/db/models"
 	"honux-core/internal/db/repository"
 	"honux-core/internal/schemas"
@@ -26,9 +25,6 @@ func (s *FloorService) GetByID(ctx context.Context, id uuid.UUID) (*models.Floor
 	f, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
-	}
-	if f == nil {
-		return nil, fmt.Errorf("floor %d not found", id)
 	}
 	return f, nil
 }
