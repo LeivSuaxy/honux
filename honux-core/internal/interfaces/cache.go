@@ -12,7 +12,7 @@ func (c *CacheRegister) New(value []byte, expire time.Time) *CacheRegister {
 }
 
 func (c *CacheRegister) Expired() bool {
-	return c.Expire.After(time.Now())
+	return time.Now().After(c.Expire)
 }
 
 type CacheProvider interface {

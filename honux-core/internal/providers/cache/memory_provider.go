@@ -35,28 +35,36 @@ func (c *MemoryCache) Set(key string, value []byte, expire time.Duration) error 
 	defer c.mu.Unlock()
 	expireAt := time.Now().Add(expire)
 	c.cache[key] = &interfaces.CacheRegister{Value: value, Expire: expireAt}
+	keys := make([]string, 0, len(c.cache))
+	for k := range c.cache {
+		keys = append(keys, k)
+	}
 	return nil
 }
 
 func (c *MemoryCache) Get(key string) (*[]byte, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
+	keys := make([]string, 0, len(c.cache))
+	for k := range c.cache {
+		keys = append(keys, k)
+	}
 	v, ok := c.cache[key]
 	if !ok {
 		return nil, errors.New("key not found")
 	}
-
 	if v.Expired() {
+		c.mu.RUnlock()
 		c.Delete(key)
+		c.mu.RLock()
 		return nil, errors.New("key expired")
 	}
-
-	return &v.Value, nil
+	return new(v.Value), nil
 }
 
 func (c *MemoryCache) Delete(key string) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	delete(c.cache, key)
 }
 

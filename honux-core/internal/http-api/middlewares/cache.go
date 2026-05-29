@@ -24,6 +24,7 @@ func NewCacheMiddleware(provider interfaces.CacheProvider, ttl time.Duration) fu
 
 			cacheKey := r.URL.String()
 
+			// Intenta servir desde cache
 			if data, err := provider.Get(cacheKey); err == nil {
 				var cached CachedResponse
 				if err := json.Unmarshal(*data, &cached); err == nil {
@@ -38,25 +39,29 @@ func NewCacheMiddleware(provider interfaces.CacheProvider, ttl time.Duration) fu
 					}
 					return
 				}
-				log.Println("deserialization error")
+				// Unmarshal falló: loguea pero continúa normalmente
+				log.Println("cache deserialization error, bypassing cache")
 			}
 
+			// Cache miss — captura la respuesta
 			capture := newCaptureWriter(w)
 			next.ServeHTTP(capture, r)
 
-			if capture.statusCode >= 200 && capture.statusCode <= 300 {
+			// Solo cachea respuestas exitosas
+			if capture.statusCode >= 200 && capture.statusCode < 300 {
 				cached := CachedResponse{
 					StatusCode: capture.statusCode,
 					Header:     capture.header,
 					Body:       capture.body.Bytes(),
 				}
-
 				if cacheData, err := json.Marshal(cached); err == nil {
 					if err := provider.Set(cacheKey, cacheData, ttl); err != nil {
-						log.Println("error saving cache", err)
+						log.Println("error saving to cache:", err)
 					}
 				}
 			}
+
+			// Siempre vuelca al cliente
 			capture.flushTo()
 		})
 	}
