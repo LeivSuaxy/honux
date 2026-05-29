@@ -8,6 +8,7 @@ import (
 	"honux-core/internal/http-api/middlewares"
 	http_floors "honux-core/internal/http-api/modules/floors"
 	http_users "honux-core/internal/http-api/modules/users"
+	http_zones "honux-core/internal/http-api/modules/zones"
 	"honux-core/internal/providers/cache"
 	"honux-core/internal/server/router"
 	"honux-core/internal/service"
@@ -34,6 +35,11 @@ func New(port int, db *sql.DB) *Server {
 	floorSvc := service.NewFloorService(floorRepo)
 	floorHandler := http_floors.NewFloorHandlerHTTP(floorSvc)
 
+	// Zone
+	zoneRepo := repository.NewZoneRepository(db)
+	zoneSvc := service.NewZoneService(zoneRepo)
+	zoneHandler := http_zones.NewZoneHandlerHTTP(zoneSvc)
+
 	// Create MUX Server
 	mux := router.NewTrackedMux()
 
@@ -47,6 +53,7 @@ func New(port int, db *sql.DB) *Server {
 	// All Routes
 	http_users.RegisterRoutes(mux, userHandler)
 	http_floors.RegisterRoutes(mux, floorHandler)
+	http_zones.RegisterRoutes(mux, zoneHandler)
 	registerRoutes(mux)
 
 	mux.PrintRoutes(time.Since(start).Milliseconds())
@@ -64,7 +71,7 @@ func New(port int, db *sql.DB) *Server {
 }
 
 func registerRoutes(r router.Router) {
-	m := r.Module("common")
+	m := r.Module("server")
 	m.HandleFunc("GET /health", healthCheck)
 }
 

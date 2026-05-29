@@ -31,7 +31,6 @@ func (s *UserService) GetByID(ctx context.Context, id uuid.UUID) (*models.User, 
 	return u, nil
 }
 
-// TODO Review returns errors!
 func (s *UserService) Create(ctx context.Context, req *schemas.CreateUpdateUser) (*models.User, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -43,7 +42,6 @@ func (s *UserService) Create(ctx context.Context, req *schemas.CreateUpdateUser)
 	return s.repo.Create(ctx, req)
 }
 
-// TODO Review returns errors!
 func (s *UserService) Update(ctx context.Context, req *schemas.CreateUpdateUser, id uuid.UUID) (*models.User, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -56,11 +54,5 @@ func (s *UserService) Update(ctx context.Context, req *schemas.CreateUpdateUser,
 }
 
 func (s *UserService) Delete(ctx context.Context, id uuid.UUID) error {
-	err := s.repo.SoftDelete(ctx, id)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.repo.SoftDelete(ctx, id)
 }

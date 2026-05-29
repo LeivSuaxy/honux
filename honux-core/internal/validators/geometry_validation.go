@@ -3,6 +3,7 @@ package validators
 import (
 	"encoding/json"
 	"fmt"
+	"honux-core/internal/domain/geometry"
 )
 
 func ValidateGeometry(shapeType string, raw json.RawMessage) FieldErrors {
@@ -20,7 +21,7 @@ func ValidateGeometry(shapeType string, raw json.RawMessage) FieldErrors {
 	}
 
 	switch shapeType {
-	case "polygon":
+	case geometry.Polygon:
 		var g struct {
 			Points []struct {
 				X *float64 `json:"x"`
@@ -40,7 +41,7 @@ func ValidateGeometry(shapeType string, raw json.RawMessage) FieldErrors {
 				fe.Add("geometry", fmt.Sprintf("point at index %d must have x and y", i))
 			}
 		}
-	case "rectangle":
+	case geometry.Rectangle:
 		var g struct {
 			X      *float64 `json:"x"`
 			Y      *float64 `json:"y"`
@@ -59,7 +60,7 @@ func ValidateGeometry(shapeType string, raw json.RawMessage) FieldErrors {
 			fe.Add("geometry", "rectangle width and height must be greater than 0")
 			return fe
 		}
-	case "circle":
+	case geometry.Circle:
 		var g struct {
 			Center struct {
 				X *float64 `json:"x"`
@@ -84,4 +85,19 @@ func ValidateGeometry(shapeType string, raw json.RawMessage) FieldErrors {
 		return fe
 	}
 	return nil
+}
+
+func ValidateShapeType(shapeType string) FieldErrors {
+	switch shapeType {
+	case geometry.Polygon:
+		return nil
+	case geometry.Rectangle:
+		return nil
+	case geometry.Circle:
+		return nil
+	}
+
+	fe := make(FieldErrors)
+	fe.Add("shape_type", "invalid shape_type")
+	return fe
 }

@@ -16,9 +16,9 @@ func (r *CreateUpdateUserRequest) Validate() error {
 	fe := make(validators.FieldErrors)
 
 	usernameErrors := validators.NewStringValidator("username", r.Username).
-		IsNotEmpty().
-		IsGreaterThan(255).
-		IsLessThan(0).
+		NotEmpty().
+		MaxLength(255).
+		MinLength(0).
 		GetErrors()
 
 	if usernameErrors != nil {
@@ -31,8 +31,8 @@ func (r *CreateUpdateUserRequest) Validate() error {
 	}
 
 	passwordErrors := validators.NewStringValidator("password", r.Password).
-		IsNotEmpty().
-		IsLessThan(8).
+		NotEmpty().
+		MinLength(8).
 		GetErrors()
 
 	if passwordErrors != nil {

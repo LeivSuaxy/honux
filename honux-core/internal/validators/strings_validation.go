@@ -14,21 +14,21 @@ func NewStringValidator(field, s string) *StringValidator {
 	return &StringValidator{FieldErrors: make(FieldErrors), field: field, s: s}
 }
 
-func (sv *StringValidator) IsNotEmpty() *StringValidator {
+func (sv *StringValidator) NotEmpty() *StringValidator {
 	if strings.TrimSpace(sv.s) == "" {
 		sv.FieldErrors.Add(sv.field, "cannot be empty")
 	}
 	return sv
 }
 
-func (sv *StringValidator) IsGreaterThan(limit int) *StringValidator {
+func (sv *StringValidator) MaxLength(limit int) *StringValidator {
 	if len(sv.s) > limit {
 		sv.FieldErrors.Add(sv.field, "cannot be greater than limit")
 	}
 	return sv
 }
 
-func (sv *StringValidator) IsLessThan(limit int) *StringValidator {
+func (sv *StringValidator) MinLength(limit int) *StringValidator {
 	if len(sv.s) < limit {
 		sv.FieldErrors.Add(sv.field, "cannot be less than limit")
 	}

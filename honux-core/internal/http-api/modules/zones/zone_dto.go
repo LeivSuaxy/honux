@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"honux-core/internal/schemas"
 	"honux-core/internal/validators"
-	"strings"
 
 	"github.com/google/uuid"
 )
@@ -13,7 +12,7 @@ type CreateUpdateZoneRequest struct {
 	Name            string          `json:"name"`
 	ShortIdentifier *string         `json:"short_identifier,omitempty"`
 	ShapeType       string          `json:"shape_type"`
-	Geometry        json.RawMessage `json:"geometry"` // TODO why rawmessage?
+	Geometry        json.RawMessage `json:"geometry"`
 	Color           *string         `json:"color,omitempty"`
 	FloorId         *string         `json:"floor_id,omitempty"`
 }
@@ -21,32 +20,49 @@ type CreateUpdateZoneRequest struct {
 func (r *CreateUpdateZoneRequest) Validate() error {
 	fe := make(validators.FieldErrors)
 
-	// Name validation
-	if len(r.Name) > 50 {
-		fe.Add("name", "must be less than 50 characters")
-	}
+	nameErrors := validators.NewStringValidator("name", r.Name).
+		NotEmpty().
+		MinLength(8).
+		MaxLength(255).
+		GetErrors()
 
-	if strings.TrimSpace(r.Name) == "" {
-		fe.Add("name", "is required")
+	if nameErrors != nil {
+		fe.AppendFieldError(nameErrors)
 	}
 
 	// ShortIdentifier
-	if len(*r.ShortIdentifier) > 7 {
-		fe.Add("short_identifier", "must be less than 7")
+	if r.ShortIdentifier != nil {
+		if len(*r.ShortIdentifier) > 7 {
+			fe.Add("short_identifier", "must be less than 7")
+		}
 	}
 
 	// ShapeType Validation
+	shapeTypeErrors := validators.ValidateShapeType(r.ShapeType)
+
+	if shapeTypeErrors != nil {
+		fe.AppendFieldError(shapeTypeErrors)
+	}
 
 	// Geometry Validation
+	geometryErrors := validators.ValidateGeometry(r.ShapeType, r.Geometry)
+
+	if geometryErrors != nil {
+		fe.AppendFieldError(geometryErrors)
+	}
 
 	// Color Validation
-	if len(*r.Color) != 7 {
-		fe.Add("color", "must be less than 7")
+	if r.Color != nil {
+		if len(*r.Color) != 7 {
+			fe.Add("color", "must be less than 7")
+		}
 	}
 
 	// Floor ID validation
-	if err := uuid.Validate(*r.FloorId); err != nil {
-		fe.Add("floor_id", "floor id with invalid uuid format")
+	if r.FloorId != nil {
+		if err := uuid.Validate(*r.FloorId); err != nil {
+			fe.Add("floor_id", "floor id with invalid uuid format")
+		}
 	}
 
 	return fe.ToAppError()

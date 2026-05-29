@@ -15,8 +15,8 @@ func (r *CreateUpdateFloorRequest) Validate() error {
 
 	nameErrors := validators.
 		NewStringValidator("name", r.Name).
-		IsNotEmpty().
-		IsGreaterThan(255).
+		NotEmpty().
+		MaxLength(255).
 		GetErrors()
 
 	if nameErrors != nil {
